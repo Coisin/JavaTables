@@ -56,28 +56,52 @@ public class Table<E> extends JTable{
 	
 	public List<E> getData() { return data; }
 	
-	public int getRowIndexWhere(Field field, Object value) {
+	public List<Integer> getRowIndexesWhere(Field field, Object value, int quantity) {
+		ArrayList<Integer> results = new ArrayList();
+		int found = 0;
 		int i = 0;
 		try {
 			for(E e:data) {
 				if(field.get(e) == value || value instanceof String && value.equals(field.get(e))) {
-					return i;
+					results.add(i);
+					found++;
+					if(found == quantity)break;
 				}
 				i++;
 			}
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
-		return -1;
+		return results;
 	}
 	
-	public int getRowIndexWhere(String column, Object value) {
+	public List<Integer> getRowIndexesWhere(String column, Object value, int quantity) {
+		
 		for(Field f:fields) {
 			if(f.getName().equalsIgnoreCase(column)) {
-				return getRowIndexWhere(f, value);
+				return getRowIndexesWhere(f, value, quantity);
 			}
 		}
-		return -1;
+		return null;
+
+	}
+	
+	public List<E> getRowsWhere(Field field, Object value, int quantity) {
+		List<Integer> indexes = getRowIndexesWhere(field, value, quantity);
+		List<E> result = new ArrayList();
+		for(int index:indexes) {
+			result.add(data.get(index));
+		}
+		return result;
+	}
+	
+	public List<E> getRowsWhere(String column, Object value, int quantity) {
+		List<Integer> indexes = getRowIndexesWhere(column, value, quantity);
+		List<E> result = new ArrayList();
+		for(int index:indexes) {
+			result.add(data.get(index));
+		}
+		return result;
 	}
 	
 	public int getIndexOf(E focal) {
