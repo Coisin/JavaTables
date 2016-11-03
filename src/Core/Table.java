@@ -7,8 +7,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
+import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 public class Table<E> extends JTable{
@@ -25,13 +24,18 @@ public class Table<E> extends JTable{
 	
 	public Table(Class<E> type) {
 		pane = new JScrollPane(this);
-		model = new DefaultTableModel();
 		
 		fields = type.getFields();
 		columnNames = new String[fields.length];
 		for(int i = 0;i<fields.length;i++) {
 			columnNames[i] = fields[i].getName();
 		}
+
+		model = new DefaultTableModel() {
+			public Class getColumnClass(int column) {
+				return fields[column].getClass();
+			}
+		};
 		
 		model.setColumnIdentifiers(columnNames);
 		setModel(model);
@@ -111,7 +115,7 @@ public class Table<E> extends JTable{
 			for(E e:data) {
 				equal = true;
 				for(Field f:fields) {
-					if(f.get(e) != f.get(focal)) {
+					if(f.get(e) != f.get(focal) && !f.get(e).equals(f.get(focal))) {
 						equal = false;
 						break;
 					}
@@ -163,20 +167,72 @@ public class Table<E> extends JTable{
 		}
 	}
 	
-	public void removeManyRows(Collection<E> es) {
-		for(E e:es) {
-			removeRow(e);
+	public void removeManyRows(List<E> es) {
+		for(int i = es.size() - 1;i >= 0;i--) {
+			removeRow(i);
 		}
 	}
 	
 	public List<E> getHighlightedRows() {
-		ArrayList<E> rows = new ArrayList<E>();
-		
 		int[] indexes = super.getSelectedRows();
-		for(int i:indexes) {
-			rows.add(data.get(i));
+		return getManyRows(indexes);
+	}
+
+	public List<E> getAllRows() {
+		return data;
+	}
+
+	public void removeAllRows() {
+		removeManyRows(getData());
+	}
+
+	public void removeHighlightedRows() {
+		removeManyRows(getHighlightedRows());
+	}
+
+	public E getRow(int index) {
+		return data.get(index);
+	}
+
+	public List<E> getManyRows(int[] indexes) {
+		List<E> rows = new ArrayList<E>();
+		for(int index:indexes) {
+			rows.add(data.get(index));
 		}
 		return rows;
 	}
-	
+
+	public void avoidColumn(String column) {
+		String[] columns = new String[columnNames.length - 1];
+		Field[] fields = new Field[columnNames.length - 1];
+		int index = 0;
+
+		for(int i = 0;i<columnNames.length;i++) {
+			if(!columnNames[i].equalsIgnoreCase(column)) {
+				columns[index] = columnNames[i];
+				fields[index] = this.fields[i];
+				index++;
+			}
+		}
+		this.columnNames = columns;
+		this.fields = fields;
+		model.setColumnIdentifiers(columns);
+	}
+
+	public void update(E e) {
+		int index = getIndexOf(e);
+		update(index);
+	}
+
+	public void update(int index) {
+		Object[] newRowData = new Object[fields.length];
+		try {
+			for(int i = 0;i < fields.length;i++) {
+				model.setValueAt(fields[i].get(data.get(index)), index, i);
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 }
